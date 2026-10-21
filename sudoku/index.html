@@ -1,0 +1,179 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Sunny Side Sudoku: Play in your browser</title>
+<meta name="description" content="A calm, cheerful 6x6 Sudoku with friendly Florida critters. Play free in your browser.">
+<meta name="theme-color" content="#ffedbf"><link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png">
+<style>
+:root{--cream:#ffedbf;--sky:#9ee0f2;--sun:#fa8c4d;--teal:#40738c;--gold:#ffd959;--ink:#2f4f5f;--red:#cc2640}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;color:var(--ink)}
+body{background:linear-gradient(180deg,var(--cream),var(--sky)) fixed;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:max(10px,env(safe-area-inset-top)) 10px max(14px,env(safe-area-inset-bottom));user-select:none;-webkit-user-select:none}
+.app{width:100%;max-width:520px;display:flex;flex-direction:column;gap:10px}
+header{display:flex;align-items:center;gap:10px}
+header img{width:44px;height:44px;border-radius:11px;box-shadow:0 2px 6px #0002}
+header h1{font-size:1.3rem;margin:0;flex:1;font-weight:900}
+header a{color:var(--teal);font-size:.85rem;text-decoration:none;font-weight:700}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:0;border-radius:999px;padding:7px 12px;font:inherit;font-weight:800;font-size:.85rem;background:#fff9;color:var(--teal);cursor:pointer;transition:transform .15s,background .2s}
+.chip.on{background:var(--sun);color:#fff}.chip:active{transform:scale(.94)}
+.bar{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:.95rem}
+.hearts{color:var(--red);letter-spacing:2px}
+.board{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:3px;background:var(--teal);padding:5px;border-radius:18px;box-shadow:0 8px 24px #40738c40;aspect-ratio:1;width:100%;touch-action:manipulation}
+.cell{background:#fffaf0;border-radius:9px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s;outline:none}
+.cell:nth-child(6n+3){margin-right:3px}.cell:nth-child(n+13):nth-child(-n+18),.cell:nth-child(n+25):nth-child(-n+30){margin-bottom:0}
+.cell.rb{margin-bottom:3px}
+.cell.peer{background:#fff1d6}.cell.same{background:#ffe7a8}.cell.sel{background:var(--gold);transform:scale(1.04);z-index:1}
+.cell.bad{background:#ffd3d8;animation:shake .35s}
+.cell .c{width:84%;height:84%;animation:pop .28s cubic-bezier(.3,1.6,.6,1)}
+.cell.given .c{filter:saturate(1.05)}.cell:not(.given) .c{opacity:.95}
+.cell:not(.given)::after{content:"";position:absolute;inset:auto 30% 4px;height:3px;border-radius:2px;background:var(--sun);opacity:0}
+.cell.filled:not(.given)::after{opacity:.55}
+.num{display:flex;width:84%;height:84%;border-radius:50%;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:clamp(18px,6vw,34px);animation:pop .28s cubic-bezier(.3,1.6,.6,1)}
+.notes{position:absolute;inset:3px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
+.notes img,.notes span{width:90%;height:90%;margin:auto;opacity:.85}
+.notes span{border-radius:50%;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.pad{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.pad button{border:0;background:#fff;border-radius:16px;padding:6px;aspect-ratio:1;cursor:pointer;box-shadow:0 3px 0 #40738c33;transition:transform .12s;position:relative}
+.pad button:active{transform:translateY(2px) scale(.95)}
+.pad button img,.pad button .num{width:100%;height:100%}
+.pad button.done{opacity:.35}
+.pad small{position:absolute;right:4px;bottom:2px;font-size:.65rem;font-weight:900;color:var(--teal)}
+.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tools button{border:0;border-radius:14px;padding:9px 4px;font:inherit;font-weight:800;font-size:.8rem;background:#fff9;color:var(--teal);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tools button b{font-size:1.25rem}.tools button.on{background:var(--teal);color:#fff}
+.tools button:active{transform:scale(.95)}
+.note{text-align:center;font-size:.8rem;opacity:.8;margin-top:4px}.note a{color:var(--teal)}
+.overlay{position:fixed;inset:0;background:#2f4f5f88;display:none;align-items:center;justify-content:center;z-index:9;padding:20px}
+.overlay.show{display:flex;animation:fade .3s}
+.card{background:linear-gradient(180deg,#fff,var(--cream));border-radius:26px;padding:24px;text-align:center;max-width:340px;width:100%;box-shadow:0 20px 50px #0004;animation:rise .45s cubic-bezier(.3,1.5,.6,1)}
+.card h2{margin:.2em 0;font-size:1.6rem}.card .row{display:flex;justify-content:center;gap:6px;margin:10px 0}
+.card .row img{width:44px;animation:bounce 1s infinite alternate}
+.card button{margin-top:12px;border:0;border-radius:999px;padding:12px 22px;font:inherit;font-weight:900;background:var(--sun);color:#fff;font-size:1rem;cursor:pointer}
+.card button.alt{background:#fff;color:var(--teal);margin-left:6px}
+.sun{position:fixed;width:16px;height:16px;border-radius:50%;background:var(--gold);pointer-events:none;z-index:10;animation:confetti 1.6s ease-out forwards}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--teal);color:#fff;padding:10px 16px;border-radius:999px;font-weight:800;font-size:.9rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:11}
+.toast.show{opacity:1}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes fade{from{opacity:0}}@keyframes rise{from{transform:translateY(40px) scale(.9);opacity:0}}
+@keyframes bounce{to{transform:translateY(-8px)}}
+@keyframes confetti{to{transform:translate(var(--dx),var(--dy)) rotate(540deg);opacity:0}}
+@keyframes win{50%{transform:scale(1.12) rotate(-6deg)}}
+.board.won .cell .c,.board.won .cell .num{animation:win .6s ease-in-out both}
+@media (min-width:900px){.app{max-width:480px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div class="app">
+<header><img src="icon.png" alt=""><h1>Sunny Side Sudoku</h1><a href="../index.html">Studio home</a></header>
+<div class="modes" id="modes"></div>
+<div class="bar"><span id="label"></span><span class="hearts" id="hearts"></span><span id="timer">0:00</span></div>
+<div class="board" id="board" role="grid" aria-label="Sudoku board"></div>
+<div class="pad" id="pad"></div>
+<div class="tools">
+<button id="bUndo"><b>↶</b>Undo</button><button id="bErase"><b>⌫</b>Erase</button><button id="bNotes"><b>✎</b>Notes</button><button id="bHint"><b>☀</b><span id="hintLbl">Hint</span></button><button id="bNum"><b>#</b>Numbers</button>
+</div>
+<div class="note">Fill each row, column and box with all six critters. Keys: arrows to move, 1-6 to place, N notes, Z undo, H hint.<br>📱 Get the iPhone app soon! · <a href="../index.html">Sunny Side Studios</a></div>
+</div>
+<div class="overlay" id="win"><div class="card"><div class="row" id="winRow"></div><h2 id="winTitle">Sunshine!</h2><p id="winText"></p><button id="winNext">Next puzzle</button></div></div>
+<div class="toast" id="toast"></div>
+<script src="game.js"></script>
+<script>
+(() => {
+const S = window.Sudoku, $ = id => document.getElementById(id);
+const NAMES = ['Gator','Flamingo','Manatee','Sea Turtle','Pelican','Crab'], FILES = ['1-gator','2-flamingo','3-manatee','4-turtle','5-pelican','6-crab'];
+const COLORS = ['#5cad54','#fa739e','#8c9eb8','#33a89e','#f5b340','#ed5445'];
+const MODES = [['daily','Daily'],['easy','Easy'],['medium','Medium'],['hard','Hard'],['insane','Insane']];
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; };
+const KEY = 'ssSudoku.v1';
+let st = JSON.parse(localStorage.getItem(KEY) || 'null') || {};
+st.prefs = st.prefs || { numberMode: false }; st.stats = st.stats || { wins: {}, streak: 0, lastDaily: null }; st.hints = st.hints || {};
+let g = st.game, sel = st.sel ?? null, notesMode = false;
+const save = () => { st.game = g; st.sel = sel; localStorage.setItem(KEY, JSON.stringify(st)); };
+const art = (v, cls = 'c') => st.prefs.numberMode ? `<span class="num" style="background:radial-gradient(circle at 35% 30%,${COLORS[v-1]}cc,${COLORS[v-1]})">${v}</span>` : `<img class="${cls}" src="critters/${FILES[v-1]}.svg" alt="${NAMES[v-1]}" draggable="false">`;
+const hintsLeft = () => { const k = g.mode === 'daily' ? 'medium' : g.mode; const h = st.hints; if (h.day !== today()) { st.hints = { day: today() }; } return st.hints[k] ?? S.DIFF[k].hints; };
+
+function newGame(mode) {
+  const diff = mode === 'daily' ? 'medium' : mode;
+  const p = S.generate(diff, mode === 'daily' ? S.dailySeed() : null);
+  g = { mode, day: today(), given: p.puzzle, sol: p.solution, cells: p.puzzle.slice(), notes: Array(36).fill(0), hist: [], mistakes: 0, time: 0, won: false, lost: false };
+  sel = p.puzzle.indexOf(0); $('board').classList.remove('won'); save(); render();
+}
+function render() {
+  $('modes').innerHTML = MODES.map(([k, n]) => `<button class="chip ${g.mode === k ? 'on' : ''}" data-m="${k}">${n}${k === 'daily' && st.stats.lastDaily === today() ? ' ✓' : ''}</button>`).join('');
+  const lim = S.DIFF[g.mode === 'daily' ? 'medium' : g.mode].mistakes;
+  $('label').textContent = g.mode === 'daily' ? 'Daily puzzle' : MODES.find(m => m[0] === g.mode)[1] + (st.stats.streak ? ` · ☀ ${st.stats.streak}` : '');
+  $('hearts').textContent = lim ? '♥'.repeat(lim - g.mistakes) + '♡'.repeat(g.mistakes) : '';
+  const bad = S.conflicts(g.cells), sv = sel != null ? g.cells[sel] : 0;
+  $('board').innerHTML = g.cells.map((v, i) => {
+    const cls = ['cell']; if (g.given[i]) cls.push('given'); if (v) cls.push('filled');
+    if (S.rowOf(i) === 1 || S.rowOf(i) === 3) cls.push('rb');
+    if (sel != null) { if (i === sel) cls.push('sel'); else if (S.PEERS[sel].includes(i)) cls.push('peer'); if (sv && v === sv && i !== sel) cls.push('same'); }
+    if (bad.has(i) && !g.given[i]) cls.push('bad');
+    let inner = v ? art(v) : '';
+    if (!v && g.notes[i]) inner = '<div class="notes">' + [1,2,3,4,5,6].map(d => g.notes[i] & (1 << d) ? (st.prefs.numberMode ? `<span style="background:${COLORS[d-1]}">${d}</span>` : `<img src="critters/${FILES[d-1]}.svg" alt="">`) : '<i></i>').join('') + '</div>';
+    return `<div class="${cls.join(' ')}" data-i="${i}" role="gridcell" aria-label="Row ${S.rowOf(i)+1} column ${S.colOf(i)+1}${v ? ' ' + NAMES[v-1] : ' empty'}">${inner}</div>`;
+  }).join('');
+  $('pad').innerHTML = [1,2,3,4,5,6].map(v => { const left = 6 - g.cells.filter(x => x === v).length; return `<button data-v="${v}" class="${left ? '' : 'done'}" aria-label="${NAMES[v-1]}">${art(v, '')}<small>${left || ''}</small></button>`; }).join('');
+  $('bNotes').classList.toggle('on', notesMode); $('bNum').classList.toggle('on', st.prefs.numberMode);
+  $('hintLbl').textContent = `Hint (${hintsLeft()})`; tick(0);
+}
+function push() { g.hist.push([g.cells.slice(), g.notes.slice()]); if (g.hist.length > 200) g.hist.shift(); }
+function place(v) {
+  if (sel == null || g.given[sel] || g.won || g.lost) return;
+  push();
+  if (notesMode) { g.cells[sel] = 0; g.notes[sel] ^= (1 << v); }
+  else {
+    g.cells[sel] = g.cells[sel] === v ? 0 : v; g.notes[sel] = 0;
+    if (g.cells[sel]) { S.PEERS[sel].forEach(j => g.notes[j] &= ~(1 << v));
+      if (v !== g.sol[sel]) { const lim = S.DIFF[g.mode === 'daily' ? 'medium' : g.mode].mistakes; if (lim) { g.mistakes++; if (g.mistakes >= lim) { g.lost = true; setTimeout(() => showEnd(false), 400); } } } }
+  }
+  check(); save(); render();
+}
+function check() {
+  if (!S.isSolved(g.cells, g.sol)) return;
+  g.won = true; const s = st.stats; s.wins[g.mode] = (s.wins[g.mode] || 0) + 1;
+  if (g.mode === 'daily' && s.lastDaily !== today()) { const y = new Date(); y.setDate(y.getDate() - 1); const yk = `${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`; s.streak = s.lastDaily === yk ? s.streak + 1 : 1; s.lastDaily = today(); }
+  setTimeout(() => { $('board').classList.add('won'); confetti(); setTimeout(() => showEnd(true), 700); }, 50);
+}
+function showEnd(won) {
+  const par = S.DIFF[g.mode === 'daily' ? 'medium' : g.mode].par;
+  $('winRow').innerHTML = (won ? [1,2,3,4,5,6] : [3]).map((v, k) => `<img src="critters/${FILES[v-1]}.svg" style="animation-delay:${k*.12}s" alt="">`).join('');
+  $('winTitle').textContent = won ? 'Sunshine! 🌞' : 'Out of hearts';
+  $('winText').textContent = won ? `Solved in ${fmt(g.time)}${par && g.time < par ? ' · beat the clock!' : ''}${g.mode === 'daily' ? ` · daily streak ☀ ${st.stats.streak}` : ''}` : 'The critters believe in you. Try again?';
+  $('winNext').textContent = won ? (g.mode === 'daily' ? 'Play Easy' : 'Next puzzle') : 'New puzzle';
+  $('win').classList.add('show');
+}
+function confetti() { for (let k = 0; k < 40; k++) { const e = document.createElement('div'); e.className = 'sun'; e.style.left = innerWidth / 2 + 'px'; e.style.top = innerHeight / 2.5 + 'px'; e.style.background = k % 3 ? 'var(--gold)' : COLORS[k % 6]; e.style.setProperty('--dx', (Math.random() - .5) * innerWidth + 'px'); e.style.setProperty('--dy', (Math.random() - .3) * innerHeight + 'px'); document.body.appendChild(e); setTimeout(() => e.remove(), 1700); } }
+const fmt = t => `${(t / 60) | 0}:${String(t % 60).padStart(2, '0')}`;
+function tick(d) { if (d && !g.won && !g.lost && !document.hidden) { g.time += d; if (g.time % 5 === 0) save(); } $('timer').textContent = fmt(g.time); }
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1800); }
+function undo() { const h = g.hist.pop(); if (!h || g.won) return; [g.cells, g.notes] = h; save(); render(); }
+function erase() { if (sel == null || g.given[sel] || g.won) return; push(); g.cells[sel] = 0; g.notes[sel] = 0; save(); render(); }
+function hint() {
+  if (g.won || g.lost) return; const k = g.mode === 'daily' ? 'medium' : g.mode, left = hintsLeft();
+  if (!left) return toast('No hints left today. New ones tomorrow!');
+  let i = sel != null && !g.given[sel] && g.cells[sel] !== g.sol[sel] ? sel : g.cells.findIndex((v, j) => v !== g.sol[j]);
+  if (i < 0) return; st.hints[k] = left - 1; push(); g.cells[i] = g.sol[i]; g.notes[i] = 0; sel = i; toast(`That spot is the ${NAMES[g.sol[i]-1]}!`); check(); save(); render();
+}
+$('board').addEventListener('pointerdown', e => { const c = e.target.closest('.cell'); if (c) { sel = +c.dataset.i; save(); render(); } });
+$('pad').addEventListener('click', e => { const b = e.target.closest('button'); if (b) place(+b.dataset.v); });
+$('modes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const m = b.dataset.m; if (m === g.mode && !g.won && !g.lost && g.cells.some((v, i) => v !== g.given[i]) && !confirm('Start a new puzzle?')) return; newGame(m); });
+$('bUndo').onclick = undo; $('bErase').onclick = erase; $('bHint').onclick = hint;
+$('bNotes').onclick = () => { notesMode = !notesMode; render(); };
+$('bNum').onclick = () => { st.prefs.numberMode = !st.prefs.numberMode; save(); render(); };
+$('winNext').onclick = () => { $('win').classList.remove('show'); newGame(g.won && g.mode === 'daily' ? 'easy' : g.mode); };
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return; const k = e.key;
+  if (/^[1-6]$/.test(k)) place(+k);
+  else if (k.startsWith('Arrow')) { e.preventDefault(); if (sel == null) sel = 0; const r = S.rowOf(sel), c = S.colOf(sel); const [dr, dc] = { ArrowUp: [-1,0], ArrowDown: [1,0], ArrowLeft: [0,-1], ArrowRight: [0,1] }[k]; sel = ((r + dr + 6) % 6) * 6 + (c + dc + 6) % 6; render(); }
+  else if (k === 'Backspace' || k === 'Delete' || k === '0') erase();
+  else if (k === 'n' || k === 'N') $('bNotes').click();
+  else if (k === 'z' || k === 'Z' || k === 'u') undo();
+  else if (k === 'h' || k === 'H') hint();
+  else if (k === 'Escape') $('win').classList.remove('show');
+});
+setInterval(() => tick(1), 1000);
+if (!g || (g.mode === 'daily' && g.day !== today())) newGame(g ? g.mode : 'daily'); else render();
+if (g.won || g.lost) showEnd(g.won);
+})();
+</script></body></html>
