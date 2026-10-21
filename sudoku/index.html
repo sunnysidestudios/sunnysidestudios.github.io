@@ -18,10 +18,9 @@ header a{color:var(--teal);font-size:.85rem;text-decoration:none;font-weight:700
 .chip.on{background:var(--sun);color:#fff}.chip:active{transform:scale(.94)}
 .bar{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:.95rem}
 .hearts{color:var(--red);letter-spacing:2px}
-.board{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:3px;background:var(--teal);padding:5px;border-radius:18px;box-shadow:0 8px 24px #40738c40;aspect-ratio:1;width:100%;touch-action:manipulation}
-.cell{background:#fffaf0;border-radius:9px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s;outline:none}
-.cell:nth-child(6n+3){margin-right:3px}.cell:nth-child(n+13):nth-child(-n+18),.cell:nth-child(n+25):nth-child(-n+30){margin-bottom:0}
-.cell.rb{margin-bottom:3px}
+.board{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:3px;background:var(--teal);padding:5px;border-radius:18px;box-shadow:0 8px 24px #40738c40;aspect-ratio:1;width:100%;touch-action:manipulation}
+.cell{min-width:0;min-height:0;background:#fffaf0;border-radius:9px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .15s;outline:none}
+.cell.cb{box-shadow:3px 0 0 var(--teal)}.cell.rb{box-shadow:0 3px 0 var(--teal)}.cell.cb.rb{box-shadow:3px 0 0 var(--teal),0 3px 0 var(--teal),3px 3px 0 var(--teal)}
 .cell.peer{background:#fff1d6}.cell.same{background:#ffe7a8}.cell.sel{background:var(--gold);transform:scale(1.04);z-index:1}
 .cell.bad{background:#ffd3d8;animation:shake .35s}
 .cell .c{width:84%;height:84%;animation:pop .28s cubic-bezier(.3,1.6,.6,1)}
@@ -32,7 +31,7 @@ header a{color:var(--teal);font-size:.85rem;text-decoration:none;font-weight:700
 .notes{position:absolute;inset:3px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
 .notes img,.notes span{width:90%;height:90%;margin:auto;opacity:.85}
 .notes span{border-radius:50%;color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center}
-.pad{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 .pad button{border:0;background:#fff;border-radius:16px;padding:6px;aspect-ratio:1;cursor:pointer;box-shadow:0 3px 0 #40738c33;transition:transform .12s;position:relative}
 .pad button:active{transform:translateY(2px) scale(.95)}
 .pad button img,.pad button .num{width:100%;height:100%}
@@ -106,7 +105,7 @@ function render() {
   const bad = S.conflicts(g.cells), sv = sel != null ? g.cells[sel] : 0;
   $('board').innerHTML = g.cells.map((v, i) => {
     const cls = ['cell']; if (g.given[i]) cls.push('given'); if (v) cls.push('filled');
-    if (S.rowOf(i) === 1 || S.rowOf(i) === 3) cls.push('rb');
+    if (S.rowOf(i) === 1 || S.rowOf(i) === 3) cls.push('rb'); if (S.colOf(i) === 2) cls.push('cb');
     if (sel != null) { if (i === sel) cls.push('sel'); else if (S.PEERS[sel].includes(i)) cls.push('peer'); if (sv && v === sv && i !== sel) cls.push('same'); }
     if (bad.has(i) && !g.given[i]) cls.push('bad');
     let inner = v ? art(v) : '';
